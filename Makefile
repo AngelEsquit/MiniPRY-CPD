@@ -1,21 +1,25 @@
 
-CC = gcc
-CFLAGS = -O2 -fopenmp
+CC ?= gcc
+CFLAGS = -O2 -fopenmp -Iinclude
 
-OBJS = ecosystem.o main.o
+SRC_DIR = src
+BUILD_DIR = build
+
+SRCS = $(shell find $(SRC_DIR) -name '*.c')
+OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+DEPS = include/ecosystem.h $(SRC_DIR)/internal.h
+TARGET = ecosystem
 
 .PHONY: all clean
 
-all: ecosystem
+all: $(TARGET)
 
-ecosystem: $(OBJS)
+$(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
-ecosystem.o: ecosystem.c ecosystem.h
-	$(CC) $(CFLAGS) -c ecosystem.c -o ecosystem.o
-
-main.o: main.c ecosystem.h
-	$(CC) $(CFLAGS) -c main.c -o main.o
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(DEPS)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o ecosystem
+	rm -rf $(BUILD_DIR) $(TARGET)

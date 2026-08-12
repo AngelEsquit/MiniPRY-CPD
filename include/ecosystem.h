@@ -15,7 +15,7 @@ typedef struct {
 
 void ecosystem_init(int rows, int cols, int num_threads,
                     int n_plants, int n_herb, int n_carn);
-void ecosystem_run(int ticks);
+void ecosystem_run(int ticks, int live);
 void ecosystem_free(void);
 
 #ifdef __cplusplus
