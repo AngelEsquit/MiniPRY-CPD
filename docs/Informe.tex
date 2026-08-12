@@ -1,0 +1,280 @@
+\documentclass[11pt]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{parskip}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10},
+    language=C
+}
+
+\title{Simulación de Ecosistema con OpenMP}
+\author{Javier España, José Mérida, Angel Esquit \\ Computación Paralela y Distribuida}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+Este proyecto implementa una simulación de ecosistema sobre una grilla 2D
+(plantas, herbívoros, carnívoros) que avanza en \emph{ticks} discretos,
+paralelizada con OpenMP. 
+
+\section{Reglas del Ecosistema}
+
+Cada celda de la grilla guarda:
+
+\begin{lstlisting}[language=c]
+typedef struct {
+    int type;    // EMPTY, PLANT, HERBIVORE, CARNIVORE
+    int energy;
+    int starve;  // ticks consecutivos sin comer
+    int age;
+} Cell;
+\end{lstlisting}
+
+\textbf{Plantas.} Cada tick, con 30\% de probabilidad, una planta se
+expande a una celda vacía adyacente al azar; la planta original no
+desaparece, sigue en su celda y crece un brote nuevo en la vecina. Muere
+únicamente si es consumida por un herbívoro.
+
+\textbf{Herbívoros.} Cada tick, un herbívoro pondera sus hasta 4 celdas
+vecinas transitables (vacías, o con una planta que puede comer) como
+suma ponderada de:
+
+\begin{itemize}
+    \item[+] $5 \times$ distancia de ese vecino al carnívoro más cercano
+    \item[--] $2 \times$ distancia de ese vecino a la planta más cercana
+    \item[+] $20$ si ese vecino tiene una planta (bono fijo por comer)
+\end{itemize}
+
+y se mueve al vecino de mayor puntaje (se queda quieto si ninguno es
+transitable). Es un trade-off continuo entre huir del carnívoro más
+cercano y acercarse a la planta más cercana, así podemos emular de manera
+más cercana un comportamiento adecuado. Al comer gana energía, si llega a
+$\geq 2\times$ su energía inicial, puede reproducirse (deja una cría en la celda
+que acaba de desocupar). Muere por no comer, por vejez, o por ser comido.
+
+\textbf{Carnívoros.} Misma estructura, pero sin comportamiento de huida.
+Si hay un herbívoro adyacente lo cazan y si no, caminan
+hacia el herbívoro más cercano. Si no hay ninguno cerca, deambulan. La
+reproducción y la muerte siguen la misma lógica que los herbívoros, con sus
+propias constantes de energía y hambre.
+
+\textbf{Competencia entre especies.} Las tres especies deciden su
+movimiento sobre la misma foto congelada de la grilla (nadie ve el
+resultado de nadie más dentro del mismo tick), así que puede pasar que
+varias celdas de especies distintas propongan la misma celda destino.
+Por ejemplo, una planta expandiéndose a una celda vacía y un herbívoro
+deambulando hacia esa misma celda. Eso se resuelve con una prioridad fija
+por tipo de movimiento (más detalle en la Sección \ref{sec:resolve}):
+cazar (20) $>$ huir (15) $>$ comer planta (10) $>$ deambular/expandirse
+(5 / 1).
+
+\section{Funcionamiento}
+
+\subsection{Organización del Código}
+
+El código está separado por responsabilidad en
+\texttt{src/}:
+
+\begin{lstlisting}[language=bash]
+src/
+  internal.h     Estado y helpers compartidos (privado)
+  main.c          CLI
+  core/           Estado, mapas de distancia, orquestacion del tick, apply
+  species/        Una decision de movimiento por especie
+  sync/           Resolucion de conflictos de destino
+  io/             Salida de consola
+  util/           RNG
+\end{lstlisting}
+
+\subsection{Estructuras Principales}
+
+\begin{itemize}
+    \item \texttt{Cell}: el estado de una celda (\texttt{type},
+    \texttt{energy}, \texttt{starve}, \texttt{age}).
+    \item \texttt{Move}: la propuesta de movimiento de una celda origen
+    (\texttt{dst\_i}, \texttt{dst\_j}, \texttt{score}, \texttt{valid}),
+    guardada en el arreglo \texttt{moves[]}.
+    \item \texttt{claim\_score[]} / \texttt{claim\_src[]}: por cada celda
+    destino, el mejor puntaje visto hasta ahora y quién lo propuso. Es el
+    resultado de la resolución de conflictos.
+    \item \texttt{moved[]} / \texttt{eaten[]}: banderas por celda origen
+    para dos casos especiales (alguien que se movió de verdad, alguien
+    que fue cazado en su propia celda) que la resolución por destino, por
+    sí sola, no cubre.
+    \item \texttt{Birth}: una cría en cola, con su celda y su tipo
+    (\texttt{births[]}, \texttt{birth\_count}).
+    \item \texttt{dist\_to\_plant[]}, \texttt{dist\_to\_herbivore[]},
+    \texttt{dist\_to\_carnivore[]}: los mapas de distancia usados por
+    herbívoros y carnívoros para decidir hacia dónde moverse.
+\end{itemize}
+
+\subsection{Ciclo del Tick}
+
+Todo tick lee de \texttt{grid\_cur} y escribe en \texttt{grid\_next},
+intercambiando los punteros recién al final (doble buffer). Si todos los
+hilos leyeran y escribieran la misma grilla a la vez, el resultado
+dependería del orden de ejecución de los hilos, que en OpenMP no está
+definido. Con doble buffer, cada ronda paralela lee de un array que nadie
+escribe y escribe en uno que nadie lee, así que no hace falta ningún
+lock. El mismo truco se usa dentro de cada mapa de distancia (Sección
+\ref{sec:distmaps}).
+
+\begin{enumerate}
+    \item Se recalculan tres mapas de distancia (a la planta,
+    herbívoro y carnívoro más cercanos) desde \texttt{grid\_cur}.
+    \item Cada especie propone, en paralelo, un movimiento por celda
+    hacia \texttt{moves[]}.
+    \item Se resuelven los conflictos de destino, llenando
+    \texttt{claim\_src[]}, \texttt{moved[]} y \texttt{eaten[]}.
+    \item Se aplica el resultado a \texttt{grid\_next}, usando esas tres
+    estructuras.
+    \item Se intercambian \texttt{grid\_cur} y \texttt{grid\_next} y se
+    repite.
+\end{enumerate}
+
+\subsection{Mapas de Distancia}
+\label{sec:distmaps}
+
+Calcular "la planta más cercana" para cada celda es un BFS multi-fuente.
+En vez de una cola compartida (su propio problema de sincronización), se
+calcula por relajación en rondas, con el mismo truco de doble buffer:
+
+\begin{lstlisting}[language=c]
+buf_a[k] = (grid_cur[k].type == seed_type) ? 0 : DIST_INF;
+for (round = 0; round < MAX_RELAX_RADIUS; round++) {
+    #pragma omp parallel for collapse(2)
+    for (i, j) {
+        best = buf_a[IDX(i,j)];
+        for cada vecino: best = min(best, buf_a[vecino] + 1);
+        buf_b[IDX(i,j)] = best;
+    }
+    swap(buf_a, buf_b);
+}
+\end{lstlisting}
+
+Por ronda, cada hilo procesa una celda: lee su propia distancia y la de
+sus 4 vecinos en \texttt{buf\_a}, y escribe un único valor en
+\texttt{buf\_b}. Como todos leen de \texttt{buf\_a} y nadie lo escribe
+esa ronda, no hace falta coordinación entre hilos hasta el barrier
+implícito al final del \texttt{parallel for}, que marca cuándo la
+siguiente ronda puede arrancar.
+
+Las rondas se acotan a \texttt{MAX\_RELAX\_RADIUS = 8}: a un organismo
+solo le importa la dirección hacia el objetivo, no la distancia exacta en
+toda la grilla.
+
+\subsection{Lista de Movimientos}
+
+Cada celda origen escribe su movimiento propuesto en
+\texttt{moves[IDX(i,j)]}, su propio índice y ningún otro. Como ningún par
+de hilos escribe jamás la misma posición, esta etapa no necesita
+sincronización.
+
+\subsection{Resolución de Conflictos}
+\label{sec:resolve}
+
+El único conflicto real es cuando dos celdas origen (de cualquier
+especie) proponen la misma celda destino. Se resuelve con un
+\texttt{omp\_lock\_t} por celda de la grilla:
+
+\begin{lstlisting}[language=c]
+omp_set_lock(&cell_locks[dst]);
+if (moves[k].score > claim_score[dst]) {
+    claim_score[dst] = moves[k].score;
+    claim_src[dst]   = k;
+}
+omp_unset_lock(&cell_locks[dst]);
+\end{lstlisting}
+
+Cada lock protege una sola celda, así que dos hilos yendo a destinos
+distintos nunca se bloquean entre sí.
+
+La prioridad por score cubre exclusivamente empates sobre una misma
+celda destino; por las reglas de movimiento, la celda de un herbívoro
+vivo solo puede ser destino de un carnívoro cazándolo, así que ahí el
+único empate posible es entre dos carnívoros cazando al mismo
+herbívoro.
+
+Después de resolver corren dos pasadas cortas de etiquetado, sin locks
+(cada una escribe un índice distinto por iteración, libre de carrera):
+\texttt{moved[]} marca qué celdas se vaciaron de verdad, para no
+duplicar a alguien que se movió como si además se hubiera quedado
+quieto; \texttt{eaten[]} marca herbívoros cazados en su propia celda de
+origen, cubriendo el caso en el que ese mismo herbívoro también ganó,
+en una celda destino distinta, su propio movimiento hacia otra parte.
+\texttt{core/apply.c} revisa \texttt{eaten[]} antes de colocar a
+cualquier ganador de movimiento.
+
+\subsection{Nacimientos}
+
+Una cría se coloca en la celda que su padre acaba de desocupar, una
+celda que también se procesa, en la misma pasada paralela, como destino
+de otra celda cualquiera. Escribirla directamente ahí sería una carrera,
+así que cada nacimiento reserva un lugar en una cola con un contador
+atómico (\texttt{\#pragma omp atomic capture}) y se coloca en una pasada
+aparte, después de que la pasada principal termina.
+
+\subsection{Números Aleatorios}
+
+Cada hilo tiene su propia semilla (\texttt{seeds[tid]}) y usa
+\texttt{rand\_r}, reentrante, para no competir por el estado global de
+\texttt{rand()}.
+
+\section{Compilación y Ejecución}
+
+\begin{lstlisting}[language=bash]
+make            # genera build/*.o y el binario ./ecosystem
+make clean      # borra build/ y el binario
+./ecosystem <filas> <cols> <ticks> <hilos>
+./ecosystem 60 60 100 8
+\end{lstlisting}
+
+La población inicial se deriva del tamaño de la grilla: 30\% plantas,
+10\% herbívoros, 5\% carnívoros. Cada 10 ticks (y en los ticks 1 y 5) se
+imprime el conteo de población por especie y, si la grilla es de 30x30 o
+menos, un mapa de caracteres de la distribución.
+
+\section{Resultados}
+
+En corridas de prueba (60x60, 40 ticks) se observa el patrón esperado de
+un sistema depredador-presa: plantas fluctuando con la presión de los
+herbívoros, herbívoros creciendo con la comida disponible y cayendo con
+la caza, carnívoros decayendo si la población de herbívoros colapsa. No
+se observó duplicación de organismos ni poblaciones que excedan la
+capacidad de la grilla en ninguna corrida.
+
+Tiempo total de simulación variando el número de hilos (grilla 200x200,
+50 ticks, máquina con 20 núcleos lógicos):
+
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+Hilos & Tiempo total (s) & Tiempo/tick (ms) & Speedup \\
+\midrule
+1 & 0.2138 & 4.28 & 1.00$\times$ \\
+2 & 0.1297 & 2.59 & 1.65$\times$ \\
+4 & 0.0878 & 1.76 & 2.44$\times$ \\
+8 & 0.0860 & 1.72 & 2.49$\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+El speedup se aplana entre 4 y 8 hilos: cada tick lanza más de veinte
+regiones paralelas distintas (8 rondas $\times$ 3 mapas de distancia, más
+decisión/resolución/aplicación), y cada una paga un costo fijo de
+arranque de hilos que, en una grilla de este tamaño, empieza a pesar más
+que el trabajo ganado por hilo adicional. Para grillas más grandes se
+esperaría que ese punto se corra hacia más hilos.
+
+\end{document}

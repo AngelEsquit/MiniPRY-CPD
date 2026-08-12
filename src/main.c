@@ -9,25 +9,46 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void print_usage(const char *prog_name) {
+  printf("Simulación de Ecosistema con OpenMP\n");
+  printf("Uso: %s <filas> <cols> <ticks> <hilos> [--live]\n", prog_name);
+  printf("Parámetros:\n");
+  printf("  <filas>   Número de filas de la grilla (entero positivo)\n");
+  printf("  <cols>    Número de columnas de la grilla (entero positivo)\n");
+  printf("  <ticks>   Número de pasos/ticks a simular (entero positivo)\n");
+  printf("  <hilos>   Número de hilos OpenMP a utilizar (entero positivo)\n");
+  printf("  --live    (Opcional) Muestra animación interactiva en consola\n\n");
+  printf("Ejemplos:\n");
+  printf("  %s 20 20 50 8\n", prog_name);
+  printf("  %s 40 40 200 4 --live\n", prog_name);
+}
+
 int main(int argc, char *argv[]) {
-  // Validar argumentos minimos antes de tocar nada
+  if (argc >= 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+    print_usage(argv[0]);
+    return 0;
+  }
+
+  // Validar argumentos mínimos antes de procesar
   if (argc < 5) {
-    fprintf(stderr,
-            "Uso: %s <filas> <cols> <ticks> <hilos> [--live]\n"
-            "  Ejemplo: %s 20 20 50 8\n"
-            "  Ejemplo (animado): %s 40 40 200 4 --live\n",
-            argv[0], argv[0], argv[0]);
+    fprintf(stderr, "Error: Argumentos insuficientes.\n");
+    print_usage(argv[0]);
     return 1;
   }
 
-  // Leer parametros de la simulacion
+  // Leer y validar parámetros numéricos
   int ROWS = atoi(argv[1]);
   int COLS = atoi(argv[2]);
   int ticks = atoi(argv[3]);
   int NUM_THR = atoi(argv[4]);
-  int live = (argc >= 6 && strcmp(argv[5], "--live") == 0); // flag opcional
+  int live = (argc >= 6 && strcmp(argv[5], "--live") == 0);
 
-  // Poblacion inicial como porcentaje del tamano del grid
+  if (ROWS <= 0 || COLS <= 0 || ticks <= 0 || NUM_THR <= 0) {
+    fprintf(stderr, "Error: Los parámetros de filas, columnas, ticks e hilos deben ser enteros positivos mayores a cero.\n");
+    return 1;
+  }
+
+  // Población inicial como porcentaje del tamaño del grid
   int total = ROWS * COLS;
   int n_plants = total * 0.30;
   int n_herb = total * 0.10;

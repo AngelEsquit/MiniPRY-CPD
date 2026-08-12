@@ -6,7 +6,7 @@
  *
  * Orden de un tick (cada paso es su propio archivo):
  *   1. core/distance_map.c   -> mapas de distancia desde grid_cur
- *   2. species/*.c           -> cada especie propone un movimiento
+ *   2. species (plants.c, etc) -> cada especie propone un movimiento
  *   3. sync/move_resolve.c   -> resuelve conflictos de destino
  *   4. core/apply.c          -> escribe grid_next
  *   5. swap grid_cur <-> grid_next (doble buffer)
