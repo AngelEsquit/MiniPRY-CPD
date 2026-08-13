@@ -40,7 +40,6 @@ La población inicial es 30% plantas, 10% herbívoros, 10% carnívoros del total
 ## Entregables y resultados
 
 - Informe del proyecto (PDF): `docs/Informe.pdf`
-- Informe editable en LaTeX: `docs/Informe.tex`
 - Archivo de resultados de simulación: `resultados.txt`
 - Copia del archivo de resultados para documentación: `docs/resultados.txt`
 
