@@ -1,11 +1,11 @@
 # Simulación de Ecosistema con OpenMP
 
-Simulación de ecosistema en una grilla 2D (plantas, herbívoros, carnívoros) paralelizada con OpenMP. Para el diseño completo (reglas, arquitectura, mecanismo de sincronización, resultados) ver [`README.tex`](README.tex) — este archivo es solo la guía rápida de compilación y ejecución.
+Simulación de ecosistema en una grilla 2D (plantas, herbívoros, carnívoros) paralelizada con OpenMP.
 
 ## Requisitos
 
-- `gcc` con soporte de OpenMP (`-fopenmp`). En Linux esto viene por defecto con casi cualquier instalación de gcc.
-- En macOS, el `clang` del sistema no trae OpenMP: hay que instalar `libomp` (`brew install libomp`) y compilar con esas flags, o instalar gcc real (`brew install gcc`) y usar `make CC=gcc-14` (o la versión que corresponda).
+- `gcc` con soporte de OpenMP (`-fopenmp`). 
+- En macOS, el `clang` del sistema no trae OpenMP: hay que instalar `libomp` (`brew install libomp`) y compilar con esas flags, o instalar gcc real (`brew install gcc`) y usar `make CC=gcc-14`.
 
 ## Compilar
 
@@ -51,4 +51,4 @@ README.tex              Informe completo del proyecto
 
 ## Ajustar parámetros de la simulación
 
-Las constantes de las reglas (probabilidades de reproducción, energía, ticks de hambre, edad máxima, radio de los mapas de distancia, prioridades de conflicto) están todas en `src/internal.h`, agrupadas y comentadas al principio del archivo. Cambiar un valor ahí y volver a correr `make` alcanza para experimentar.
+Las constantes de las reglas están todas en `src/internal.h`, agrupadas y comentadas al principio del archivo. Cambiar un valor ahí y volver a correr `make` alcanza para experimentar.
