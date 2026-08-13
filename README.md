@@ -2,6 +2,10 @@
 
 Simulación de ecosistema en una grilla 2D (plantas, herbívoros, carnívoros) paralelizada con OpenMP.
 
+## Repositorio
+
+- https://github.com/AngelEsquit/MiniPRY-CPD
+
 ## Requisitos
 
 - `gcc` con soporte de OpenMP (`-fopenmp`). 
@@ -32,6 +36,13 @@ Ejemplos:
 Sin `--live`, se imprime el conteo de población en los ticks 1, 5 y cada 10 ticks, más el mapa de caracteres (`P`/`H`/`C`) si la grilla es de 30x30 o menos. Con `--live`, la terminal se limpia y redibuja en cada tick a ~12 fps, sin límite de tamaño de grilla.
 
 La población inicial es 30% plantas, 10% herbívoros, 10% carnívoros del total de celdas (`src/main.c`).
+
+## Entregables y resultados
+
+- Informe del proyecto (PDF): `docs/Informe.pdf`
+- Informe editable en LaTeX: `docs/Informe.tex`
+- Archivo de resultados de simulación: `resultados.txt`
+- Copia del archivo de resultados para documentación: `docs/resultados.txt`
 
 ## Estructura del proyecto
 

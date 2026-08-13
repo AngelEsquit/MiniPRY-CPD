@@ -123,8 +123,13 @@ extern const int DC[4];
 static inline int   IDX(int i, int j)  { return i * COLS + j; }
 static inline Cell *CUR(int i, int j)  { return &grid_cur [IDX(i,j)]; }
 static inline Cell *NEXT(int i, int j) { return &grid_next[IDX(i,j)]; }
+static inline unsigned int next_rand_u32(unsigned int *seed) {
+    // LCG simple y portable para evitar dependencia de rand_r en Windows/UCRT.
+    *seed = (*seed * 1103515245u) + 12345u;
+    return *seed;
+}
 static inline double rand_d(unsigned int *seed) {
-    return (double)rand_r(seed) / (double)RAND_MAX;
+    return (double)next_rand_u32(seed) / 4294967295.0;
 }
 static inline int in_bounds(int i, int j) {
     return i >= 0 && i < ROWS && j >= 0 && j < COLS;

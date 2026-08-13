@@ -1,0 +1,156 @@
+=== Simulación de Ecosistema con OpenMP ===
+Grid: 20x20  |  Ticks: 40  |  Hilos: 8
+Inicial → Plantas: 120 | Herbívoros: 40 | Carnívoros: 40
+
+** Tick 1 **
+Plantas: 118 | Herbívoros: 28 | Carnívoros: 40
+Distribución:
+H . . . P . . . P C . P P P P . P P P . 
+. . . . P C . . . P P P . P P C P H . . 
+. . H . P P P P . . . P H . P . . . . . 
+. . . . H C . . C . . H P . P . H . . . 
+. . H P H . P . . P P H . . P . P . . . 
+P . . H P P P . . H P P H P H . . C C . 
+P . . . P P . . C . P H . P P P . . P . 
+P H P P P . P . P P P . C C P . . P . C 
+. C . . . C . . . P . . . . P P P P P P 
+P . . P P . C . C P H H P C P . P P . H 
+. . . . . . C . . . P . P . . C . P P . 
+. P H P . . C . P . P . P . C . P . . C 
+. P . C P . . . P P P . . . P P . C P P 
+. . P . . . . . P . H . H . P P . . . . 
+H H P . C C C C P P . P P P . . C C P . 
+P . . . . P . . C . P C P . P . . . P H 
+. . P . P P . . P . P . . C . . . P . C 
+. . . . H . . . . C P . . P P . . . . . 
+. C C . . . C . . . . . . . P . H . H . 
+C . . . . . . . C . . . P P . . . C . . 
+  Tiempo tick 1: 4.0002 ms
+
+** Tick 5 **
+Plantas: 142 | Herbívoros: 16 | Carnívoros: 40
+Distribución:
+. . . P P . P P P C . P P P P P P H . . 
+. . . . P C P P P P P . . P . P P . C . 
+. . P P . P P P P . . H P P C . P . . . 
+P . . . . . P P C H . H H . . . . . . . 
+P . . . . . P . . P C . H . C . . . . . 
+P P . C . P P . . . . . C . P . P . . . 
+P P H . . P . . P P . . . H P P P P P . 
+P . P P H . P . P P P . . P P P P P . . 
+P P . . . C P . P P P P P . P P H . C C 
+P . . P P . . . C P P C . . P P P P . . 
+P C . . . . C . P P P H . C . P . P P . 
+. . . P C . . P P H . . C C . P P . . P 
+. C . . P . C P P P . . . P P P P . P P 
+H P . P . . C . P P H . . . P P . . P P 
+. . . . P . C C P P . . . P P . . C P P 
+. C . . P . . . C . P C P P P . . . . P 
+. C . . C . C . P P P . . . . C . C C . 
+. . . . . C C . P P P . P P P P C . C . 
+. . . . . . . . . . . . P P P P . . . . 
+. C . . . . . . . . . . P H H P . . . . 
+  Tiempo tick 5: 1.9999 ms
+
+** Tick 10 **
+Plantas: 191 | Herbívoros: 11 | Carnívoros: 44
+Distribución:
+. . P P P C P P P P . . C . H C . . . . 
+. . . P P . P P P P P . . C C P P P . . 
+P P P P P P P P P . C C . C . . P . . . 
+P P . . . P P P P . . . . C . P P . . . 
+P P . . . P P . P . P . . . . P P P P . 
+P P P . P P P . P . P . . P H P P P P P 
+. P . . P P P . P P P C P P . . H P P P 
+C . . C . . P P P P P P P P P P P P P C 
+. P P C . . P P P P P H H P P P P P P . 
+H P . P P P . C . P P P P C P . P P P P 
+P . C . . . . . P H P . . . P C P P P P 
+P C . P P C C H . . C C . . C . H P P P 
+C . P P P . . P C C . . . P P P P P P P 
+. C C P P . . C . . . . P P P P . C P P 
+. . . . P P C C P P P P P P P P . . P P 
+C . . C P P . . . C P P P P P P P P P P 
+. . . . P P . . P P P P P . . C . C P P 
+. . . . P P C C P P H . . C . P . . . . 
+. C . . . . . . P P P . . . H P C C . . 
+. . . . . . . . P P . . . P P P P . . . 
+  Tiempo tick 10: 2.0001 ms
+
+** Tick 20 **
+Plantas: 269 | Herbívoros: 4 | Carnívoros: 39
+Distribución:
+P P P P P C P P P P P P P . . P P P P P 
+P P P P P . P P P P P P P . P P P P P P 
+P P P P P P P P P . P P P . . P P P P P 
+P P P P P P P P P C P P C . P P P P P P 
+P P P P P P P P P P P P . C P P P P H P 
+P P P P P P P P P P P P . P . P P P . P 
+P P C P P P P P P P P P C C C . P P C P 
+P P . P P P P P P P P P C . C . . . . P 
+. P P C . P P P P P P P P . C C . . . . 
+C P P P P P P . P P P P P P . C . . . . 
+P P . P C . P . P P P . P . . C P . C . 
+P . C P P P P P . . C C P P . . C . P H 
+P C P P P P P P . C P P P P P P C . P P 
+. C P P P P P C . . P P P P P P P P P P 
+. . . P P P P P P P . P H P P P P P P P 
+. . . P P P P . . C . P . P P P P P P P 
+. . P P P P P . P P . . C P P P P P P P 
+C . . P P P P . H P . P . P P P C P P P 
+. C C . P P . C . C . . P P C . . P P P 
+. . C . P P P P . P P C . P . P P . . P 
+  Tiempo tick 20: 2.0001 ms
+
+** Tick 30 **
+Plantas: 338 | Herbívoros: 4 | Carnívoros: 17
+Distribución:
+P P P P P P P P P P P P H H C P P P P P 
+P P P P P P P P P P P P P P . . P P P P 
+P P P P P P P P P P P P P P P . P P P P 
+P P P P P P P P P P P P P . P P . P P P 
+P P P P P P P P P P P P P C P P P P P P 
+P P P P P P P P P P P P . P P P P P P P 
+P P P P P P P P P P P P P C . . P P P P 
+P P P P P P P P P P P P P P . C . . P P 
+. P P P P P P P P P P P P P P C C C P P 
+. P P P P P P P P P P P P P P . . P P P 
+P P P P P P P P P P P P P P C . P C P P 
+P P P P P P P P P P P P P P P P P . P P 
+P P P P P P P P P P P P P P P P . . P P 
+. P P P P P P P C . P P P P P P P C P . 
+C P P P P P P P P P P P P P P P . . P C 
+. P P P P P P P . P P P P P P P P C P . 
+. P P P P P P P C P P P P P P P H . P . 
+. P P P P P P P C P P P P P P P P P . . 
+. . P P P P P P . P P P P P P P . H C . 
+. . . P P P P P P P P P P P P P P P P P 
+  Tiempo tick 30: 1.9999 ms
+
+** Tick 40 **
+Plantas: 377 | Herbívoros: 3 | Carnívoros: 4
+Distribución:
+P P P P H H C . P P P P P P P P P P P P 
+P P P P P P . P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P . . P P P P 
+P P P P P P P P P P P P P P P . P P P P 
+P P P P P P P P P P P P P P P . P . P P 
+P P P P P P P P P P P P P P P . P P P P 
+P P P P P P P P P P P P P P . . P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P P P P P P P P P P P P P 
+P P P P P P P P C P P P P P P P P P P P 
+P P P P P P P P . P P H . P P . C P P P 
+P P P P P P P P P P P . C P P P P P P P 
+P P P P P P P P P P P P . P . P P P P P 
+  Tiempo tick 40: 1.9999 ms
+
+=== Simulación finalizada ===
+Tiempo total: 0.0910 s  |  Promedio por tick: 2.2750 ms
